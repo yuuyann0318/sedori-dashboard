@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>仕入れリサーチ｜ヤフオク</title>
+<style>
+  :root{
+    --bg:#f3f3f5; --panel:#fff; --ink:#16161a; --sub:#76767e; --line:#e7e7ec; --soft:#f3f3f6;
+    --accent:#16161a; --price:#c0392b; --deal:#0a7d4b; --warn:#d35400;
+    --hot:#e3342f; --target:#e6a800; --r:18px; --htop:120px;
+    --shadow:0 1px 2px rgba(20,20,30,.04),0 10px 30px rgba(20,20,30,.06);
+    --shadow-h:0 6px 14px rgba(20,20,30,.07),0 22px 48px rgba(20,20,30,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:.01em}
+  a{color:inherit}
+
+  header{position:sticky;top:0;z-index:30;background:rgba(248,248,250,.84);
+    backdrop-filter:saturate(160%) blur(16px);-webkit-backdrop-filter:saturate(160%) blur(16px);
+    border-bottom:1px solid var(--line)}
+  .bar{max-width:1280px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:12px}
+  .logo{width:38px;height:38px;border-radius:11px;background:var(--accent);color:#fff;display:grid;
+    place-items:center;font-weight:800;font-size:17px;flex:none;box-shadow:0 4px 12px rgba(20,20,30,.22)}
+  .brand h1{margin:0;font-size:16px;font-weight:750}
+  .brand span{font-size:11px;color:var(--sub);letter-spacing:.06em}
+  .spacer{flex:1}
+  .stat{text-align:right;font-size:11px;color:var(--sub);line-height:1.45;white-space:nowrap}
+  .stat b{color:var(--ink);font-size:14px;font-weight:700}
+  .hbtn{appearance:none;border:1px solid var(--line);cursor:pointer;background:var(--panel);color:var(--ink);
+    font-size:12.5px;font-weight:650;padding:9px 13px;border-radius:999px;flex:none;display:inline-flex;
+    align-items:center;gap:6px;transition:.15s;font-family:inherit}
+  .hbtn:hover{border-color:#c8c8cc}
+  .hbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .reload{background:var(--accent);color:#fff;border:0}
+  .reload .dot{width:7px;height:7px;border-radius:50%;background:#7CFCB4}
+  .reload.loading .dot{animation:pulse 1s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(124,252,180,.6)}70%{box-shadow:0 0 0 7px rgba(124,252,180,0)}100%{box-shadow:0 0 0 0 rgba(124,252,180,0)}}
+
+  .controls{max-width:1280px;margin:0 auto;padding:0 18px}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:11px 0 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 13px;
+    font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chip .n{font-size:11px;font-weight:700;color:var(--sub);background:var(--soft);padding:1px 7px;border-radius:999px;min-width:20px;text-align:center}
+  .chip.on .n{color:#fff;background:rgba(255,255,255,.22)}
+
+  .tools{display:flex;gap:9px;flex-wrap:wrap;padding:8px 0 13px;align-items:center}
+  .fld{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:7px 11px;font-size:12px}
+  .fld label{font-size:10px;color:var(--sub);white-space:nowrap}
+  .fld input{border:0;outline:0;background:transparent;font-size:13.5px;font-family:inherit;-moz-appearance:textfield;width:84px}
+  .fld input.num{width:62px;-moz-appearance:textfield}
+  .fld input::-webkit-outer-spin-button,.fld input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .search{flex:1;min-width:150px;position:relative}
+  .search input{width:100%;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:10px 13px 10px 34px;font-size:13.5px;outline:0;font-family:inherit}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.4}
+  .seg{display:flex;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:3px;gap:2px}
+  .seg button{appearance:none;border:0;background:transparent;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--sub);padding:7px 10px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#fff}
+  .seg.tiny button{padding:7px 9px}
+  /* PCでは包み要素を無効化し、中の各フィルタを従来どおり .tools の直下に横並び表示 */
+  .detailfilters,.bottombar{display:contents}
+  .sheet-head,.filterbtn,.sheet-backdrop{display:none}
+
+  .layout{max-width:1280px;margin:0 auto;padding:4px 18px 44px;display:flex;gap:18px;align-items:flex-start}
+  /* 相場表パネル（左） */
+  .guide{width:288px;flex:none;position:sticky;top:var(--htop);max-height:calc(100vh - var(--htop) - 16px);overflow-y:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:14px}
+  .guide h2{margin:0 0 4px;font-size:14px;font-weight:750}
+  .guide .gsub{font-size:11px;color:var(--sub);margin-bottom:10px}
+  .gsearch{width:100%;border:1px solid var(--line);border-radius:10px;padding:8px 11px;font-size:13px;outline:0;font-family:inherit;margin-bottom:10px}
+  .gcat{font-size:10px;font-weight:800;letter-spacing:1.5px;color:var(--accent);margin:12px 0 6px;text-transform:uppercase}
+  .gcaution{background:#fff0f0;border-left:3px solid var(--hot);border-radius:0 8px 8px 0;padding:8px 10px;font-size:11.5px;font-weight:700;color:var(--hot);line-height:1.5;margin:6px 0 8px}
+  .grow{display:flex;gap:9px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+  .grow img{width:42px;height:42px;border-radius:8px;object-fit:cover;background:#eee;flex:none}
+  .grow .gj{font-size:12px;font-weight:600;line-height:1.3}
+  .grow .gp{font-size:11px;color:var(--price);font-weight:700}
+  .grow .gpt{font-size:10px;color:var(--sub)}
+
+  /* 利益計算パネル（右・PC専用） */
+  .calc{width:284px;flex:none;position:sticky;top:var(--htop);max-height:calc(100vh - var(--htop) - 16px);overflow-y:auto;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px}
+  .calc h2{margin:0 0 3px;font-size:14px;font-weight:750}
+  .csub{font-size:11px;color:var(--sub);margin-bottom:12px;line-height:1.5}
+  .clabel{display:block;font-size:11px;color:var(--sub);font-weight:700;margin:11px 1px 5px}
+  .cinput{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--soft);
+    border-radius:11px;padding:10px 12px;transition:.15s}
+  .cinput:focus-within{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(20,20,30,.06)}
+  .cinput .cy{color:var(--sub);font-weight:800;font-size:14px}
+  .cinput input{border:0;outline:0;width:100%;background:transparent;font-size:16px;font-weight:700;font-family:inherit;-moz-appearance:textfield}
+  .cinput input::-webkit-outer-spin-button,.cinput input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .cresult{margin-top:14px}
+  .cempty{font-size:11.5px;color:var(--sub);text-align:center;line-height:1.6;padding:18px 6px;background:var(--soft);border-radius:12px}
+  .crow{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;padding:5px 2px;color:var(--sub)}
+  .crow b{color:var(--ink);font-weight:700}
+  .crow.minus b{color:var(--price)}
+  .cprofit{margin-top:10px;padding:13px 14px;border-radius:13px;background:var(--accent);color:#fff;text-align:center}
+  .cprofit .pl{font-size:11px;opacity:.8;font-weight:600}
+  .cprofit .pv{font-size:26px;font-weight:850;letter-spacing:-.02em;line-height:1.15}
+  .cprofit .pr{font-size:11.5px;font-weight:700;opacity:.92;margin-top:1px}
+  .cprofit.loss{background:var(--price)}
+  .cprofit.loss .pl{opacity:.9}
+  .crev{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .crev .gcat{font-size:10px;font-weight:800;letter-spacing:1.2px;color:var(--accent);margin:0 0 7px}
+  .crevout{margin-top:10px;font-size:12px;color:var(--sub);line-height:1.6;background:var(--soft);border-radius:11px;padding:11px 12px;text-align:center}
+  .crevout.has{color:var(--ink);text-align:left;background:rgba(10,125,75,.08)}
+  .crevout .bigbid{font-size:21px;font-weight:850;color:var(--deal);letter-spacing:-.01em}
+  .cfoot{margin-top:14px;font-size:10px;color:var(--sub);line-height:1.5;text-align:center}
+
+  .main{flex:1;min-width:0}
+  .warn{background:#fff4e5;border:1px solid #f3d2a0;color:#8a5300;border-radius:12px;padding:12px 15px;font-size:13px;font-weight:600;margin:10px 0 4px;line-height:1.5}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:15px;margin-top:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s;position:relative}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-h)}
+  .card.hot{border-color:rgba(227,52,47,.5);box-shadow:0 0 0 1px rgba(227,52,47,.35),var(--shadow)}
+  .card.target{border-color:rgba(230,168,0,.65);box-shadow:0 0 0 1px rgba(230,168,0,.5),var(--shadow)}
+  .thumb{position:relative;aspect-ratio:1/1;background:#ededf0;display:block;overflow:hidden}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+  .card:hover .thumb img{transform:scale(1.04)}
+  .tags{position:absolute;top:8px;left:8px;right:8px;display:flex;gap:5px;flex-wrap:wrap;pointer-events:none}
+  .tg{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;backdrop-filter:blur(4px)}
+  .tg-kw{background:rgba(22,22,26,.74);color:#fff}
+  .tg-new{background:#0a7d4b;color:#fff}
+  .tg-end{background:rgba(227,52,47,.92);color:#fff}
+  .tg-store{background:rgba(255,255,255,.92);color:#16161a}
+  .fav{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;
+    background:rgba(255,255,255,.86);backdrop-filter:blur(4px);font-size:15px;line-height:30px;text-align:center;transition:.15s;z-index:2}
+  .fav:hover{transform:scale(1.12)}
+  .fav.on{background:#ffe9a8}
+  .body{padding:11px 13px 13px;display:flex;flex-direction:column;gap:7px;flex:1}
+  .ttl{font-size:12.5px;line-height:1.45;font-weight:550;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+  .ptot{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+  .ptot .lb{font-size:10px;color:var(--sub)}
+  .ptot .now{font-size:20px;font-weight:800;color:var(--price);letter-spacing:-.01em;line-height:1}
+  .ptot .brk{font-size:10px;color:var(--sub)}
+  .signal{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;display:inline-block;width:fit-content}
+  .sig-deal{background:rgba(10,125,75,.1);color:var(--deal)}
+  .sig-warn{background:rgba(227,52,47,.1);color:var(--hot)}
+  .sig-soba{background:var(--soft);color:var(--sub);font-weight:600}
+  .pills{display:flex;gap:5px;flex-wrap:wrap}
+  .pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--soft);color:var(--sub)}
+  .pill.size{background:rgba(230,168,0,.16);color:#9a7000}
+  .pill.bigsize{background:var(--target);color:#fff}
+  .pill.sgai{background:rgba(227,52,47,.1);color:var(--hot)}
+  .pill.cond{background:rgba(10,125,75,.1);color:var(--deal)}
+  .meta{display:flex;gap:6px;font-size:11px;color:var(--sub);margin-top:auto;padding-top:8px;border-top:1px solid var(--line)}
+  .meta .m{display:inline-flex;align-items:center;gap:4px;background:var(--soft);padding:4px 8px;border-radius:7px}
+  .meta .m.hot{color:#fff;background:var(--hot)}
+  .acts{display:grid;grid-template-columns:1fr 1.1fr;gap:7px;margin-top:8px}
+  .acts a{text-align:center;font-size:11.5px;font-weight:700;padding:9px 4px;border-radius:10px;text-decoration:none;transition:.15s}
+  .a-view{background:var(--soft);color:var(--ink)}
+  .a-bid{background:var(--accent);color:#fff}
+  .a-bid:hover{opacity:.86}
+  .empty{text-align:center;color:var(--sub);padding:60px 20px}
+  .empty .big{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  /* もっと見る（ページング） */
+  .morebtn{display:none;width:100%;margin:18px 0 4px;padding:13px;border:1px solid var(--line);background:var(--panel);
+    color:var(--ink);font-family:inherit;font-size:13.5px;font-weight:700;border-radius:13px;cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+  .morebtn:hover{border-color:#c8c8cc;background:var(--soft)}
+  /* キーワードチップの開閉トグル（②） */
+  .chips.collapsed{display:none}
+  /* 相場表パネルのPC折りたたみ（③）。スマホはドロワー(open)で制御するため未使用 */
+  .guide.collapsed{display:none}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(10px);background:var(--accent);
+    color:#fff;font-size:13px;font-weight:600;padding:12px 22px;border-radius:999px;box-shadow:var(--shadow-h);opacity:0;pointer-events:none;transition:.28s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .gclose{display:none}
+
+  @media(max-width:900px){
+    .guide{position:fixed;inset:0;top:0;z-index:50;width:100%;max-height:100vh;border-radius:0;transform:translateX(-100%);transition:transform .25s}
+    .guide.open{transform:none}
+    .gclose{display:inline-block;position:absolute;top:12px;right:14px;border:0;background:var(--soft);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}
+    .calc{display:none}   /* 利益計算はPC専用（スマホは画面が狭いため非表示） */
+  }
+  @media(max-width:560px){
+    /* ══ スマホ最適化（PCには一切影響しない） ══ */
+    /* すりガラスを外す：内側の固定バー/シートの位置基準を画面(viewport)にするため */
+    header{background:rgba(248,248,250,.97);backdrop-filter:none;-webkit-backdrop-filter:none}
+
+    /* ── 工夫① 検索ヒーロー型ヘッダー ── */
+    .bar{flex-wrap:wrap;gap:8px;padding:11px 14px}
+    .logo{width:31px;height:31px;border-radius:9px;font-size:15px}
+    .brand{flex:1;min-width:0}
+    .brand h1{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand span{display:none}
+    .spacer{display:none}
+    .reload span.t,.guidebtn span.t,#chipsToggle .t{display:none}
+    .hbtn{flex:none;padding:8px 11px;font-size:13px}
+    .bar .stat{order:5;flex-basis:100%;width:100%;text-align:left;white-space:normal;font-size:11px;line-height:1.45}
+    .bar .stat br{display:none}
+    .bar .stat b{font-size:12px}
+    .controls{padding:0 14px}
+    .tools{padding:8px 0 12px}
+    .search{min-width:0;width:100%}
+    .search input{font-size:16px;padding:13px 14px 13px 40px;border-radius:12px}
+    .search svg{left:14px;width:16px;height:16px}
+
+    /* ── 工夫② 下部バー（並び替え＋⚙絞り込み）＋ せり上がりシート ── */
+    .bottombar{display:flex;gap:8px;align-items:center;
+      position:fixed;left:0;right:0;bottom:0;z-index:45;
+      padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+      background:rgba(248,248,250,.97);border-top:1px solid var(--line);box-shadow:0 -7px 22px rgba(20,20,30,.08)}
+    .filterbtn{display:inline-flex;align-items:center;gap:5px;flex:none;
+      border:0;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;font-size:13px;
+      padding:10px 14px;border-radius:11px;cursor:pointer}
+    .bottombar #segSort{flex:1;overflow-x:auto;scrollbar-width:none}
+    .bottombar #segSort::-webkit-scrollbar{display:none}
+    .bottombar #segSort button{flex:none;padding:9px 11px;font-size:12px}
+
+    /* 詳細フィルタ＝下からせり上がるシート */
+    .detailfilters{display:flex;flex-direction:column;gap:11px;
+      position:fixed;left:0;right:0;bottom:0;z-index:55;max-height:82vh;overflow-y:auto;
+      background:var(--panel);border-radius:18px 18px 0 0;
+      padding:8px 16px calc(18px + env(safe-area-inset-bottom));
+      box-shadow:0 -12px 44px rgba(20,20,30,.22);
+      transform:translateY(110%);transition:transform .28s;visibility:hidden}
+    .detailfilters.open{transform:none;visibility:visible}
+    .sheet-head{display:flex;justify-content:space-between;align-items:center;
+      padding:6px 2px 2px;font-size:15px;font-weight:750;
+      position:sticky;top:0;background:var(--panel)}
+    .sheet-close{border:0;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;
+      font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer}
+    .detailfilters .fld{width:100%;font-size:14px;padding:11px 13px;border-radius:12px}
+    .detailfilters .fld label{font-size:12px;min-width:42px}
+    .detailfilters .fld input{font-size:16px;width:100%;flex:1}
+    .detailfilters .fld input.num{width:100%}
+    .detailfilters .seg{width:100%}
+    .detailfilters .seg.tiny button,.detailfilters .seg button{flex:1;padding:11px 4px;font-size:13px}
+    .sheet-backdrop{display:block;position:fixed;inset:0;z-index:54;background:rgba(10,12,16,.42);
+      opacity:0;pointer-events:none;transition:opacity .28s}
+    .sheet-backdrop.open{opacity:1;pointer-events:auto}
+
+    /* 固定バーに隠れないよう余白、トーストも上げる */
+    .layout{padding:4px 14px calc(82px + env(safe-area-inset-bottom))}
+    .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
+
+    /* カード：2列・タッチ最適化 */
+    .grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .ptot .now{font-size:17px}
+    .card:hover{transform:none;box-shadow:var(--shadow)}
+    .card:hover .thumb img{transform:none}
+    .card:active{transform:scale(.99)}
+    .body{padding:10px 11px 12px;gap:6px}
+  }
+  /* ⑥ スマホ(≤640px)は重いすりガラス(backdrop-filter)を全部外して軽量化 */
+  @media(max-width:640px){
+    .tg,.fav{backdrop-filter:none;-webkit-backdrop-filter:none}
+    /* 画面外カードの描画を遅延（スクロール軽量化）。高さ予約でスクロールバー安定 */
+    .card{content-visibility:auto;contain-intrinsic-size:0 300px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">仕</div>
+    <div class="brand"><h1>仕入れリサーチ</h1><span>ヤフオク 自動収集</span></div>
+    <div class="spacer"></div>
+    <button class="hbtn" id="chipsToggle" title="キーワードで絞り込み">🏷<span class="t"> 絞り込み</span></button>
+    <button class="hbtn guidebtn" id="guideBtn">📖<span class="t"> 相場表</span></button>
+    <button class="hbtn" id="favBtn">★<span class="t"> お気に入り</span></button>
+    <div class="stat" id="stat">読み込み中…</div>
+  </div>
+  <div class="controls">
+    <div class="chips" id="chips"></div>
+    <div class="tools">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="fQuery" type="text" placeholder="タイトル内を検索">
+      </div>
+      <div class="detailfilters" id="detailFilters">
+        <div class="sheet-head"><span>絞り込み</span><button class="sheet-close" id="sheetClose">完了</button></div>
+        <div class="fld"><label>除外</label><input id="fExclude" type="text" placeholder="ジャンク 偽物"></div>
+        <div class="fld"><label>総額¥</label><input id="fMin" class="num" type="number" inputmode="numeric" placeholder="下限"><span style="color:var(--sub)">〜</span><input id="fMax" class="num" type="number" inputmode="numeric" placeholder="上限"></div>
+        <div class="fld"><label>号数</label><input id="fSize" class="num" type="number" inputmode="decimal" placeholder="以上"></div>
+        <div class="seg tiny" id="segBuy"><button data-v="" class="on">即決両方</button><button data-v="1">あり</button><button data-v="0">なし</button></div>
+        <div class="seg tiny" id="segStore"><button data-v="" class="on">個人/ストア</button><button data-v="0">個人</button><button data-v="1">ストア</button></div>
+      </div>
+      <div class="bottombar">
+        <button class="filterbtn" id="filterBtn">⚙<span> 絞り込み</span></button>
+        <div class="seg" id="segSort"><button data-sort="new" class="on">新着</button><button data-sort="price_asc">安い</button><button data-sort="price_desc">高い</button><button data-sort="ending">終了間近</button><button data-sort="bids">入札</button></div>
+      </div>
+    </div>
+  </div>
+  <!-- 絞り込みシートの背景。header(z-index:30で重なり文脈を作る)の内側に置かないと、
+       シート(header内)より前面に来てタッチを横取りし入力できなくなる -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+</header>
+
+<div class="layout">
+  <aside class="guide" id="guide">
+    <button class="gclose" id="gClose">閉じる</button>
+    <h2>メルカリ相場表</h2>
+    <div class="gsub">Tiffany &amp; Co. 中古相場の目安</div>
+    <input class="gsearch" id="gSearch" placeholder="ライン名で検索（例：オープンハート）">
+    <div id="guideList"></div>
+  </aside>
+
+  <main class="main">
+    <div id="warn" class="warn" style="display:none"></div>
+    <div class="grid" id="grid"></div>
+    <button class="morebtn" id="moreBtn"></button>
+    <div class="empty" id="empty" style="display:none"><div class="big">条件に合う商品がありません</div><div>条件をゆるめてみてください</div></div>
+  </main>
+
+  <aside class="calc" id="calc">
+    <h2>🧮 利益計算</h2>
+    <div class="csub">メルカリで売った時の手取り・利益</div>
+    <label class="clabel">売値（メルカリ予想売価）</label>
+    <div class="cinput"><span class="cy">¥</span><input id="cSell" type="number" inputmode="numeric" placeholder="例 12000"></div>
+    <label class="clabel">仕入れ（落札・入札額）</label>
+    <div class="cinput"><span class="cy">¥</span><input id="cCost" type="number" inputmode="numeric" placeholder="例 5000"></div>
+    <div class="cresult" id="cResult">
+      <div class="cempty">売値と仕入れを入力すると<br>利益を計算します</div>
+    </div>
+    <div class="crev">
+      <div class="gcat">目標利益から逆算</div>
+      <label class="clabel">ほしい利益</label>
+      <div class="cinput"><span class="cy">¥</span><input id="cTarget" type="number" inputmode="numeric" placeholder="例 3000"></div>
+      <div class="crevout" id="cRevOut">売値とほしい利益を入れると、<br>仕入れの上限を表示します</div>
+    </div>
+    <div class="cfoot">メルカリ手数料 10％ ＋ 送料 180円 を差し引いて計算</div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="price_guide.js"></script>
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const yen=n=>n==null?"—":n.toLocaleString("ja-JP");
+const shortKw=k=>k.replace(/^ティファニー\s*/,"").trim()||k;
+let state={keyword:"",q:"",exclude:"",min:"",max:"",size:"",buynow:"",store:"",sort:"new"};
+let favOnly=false, debounce=null, DATA=null;
+// 読み込むデータファイルをデバイスで切替：スマホは新着1,500件の軽量版を読む
+const MOBILE=window.matchMedia("(max-width:640px)").matches;
+const DATA_URL=MOBILE?"data.mobile.json":"data.json";
+let FAV=JSON.parse(localStorage.getItem("yahoo_fav")||"{}");
+function saveFav(){localStorage.setItem("yahoo_fav",JSON.stringify(FAV));}
+
+function fmtTime(iso){if(!iso)return "—";const d=new Date(iso);return d.toLocaleString("ja-JP",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function esc(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function safeUrl(u){return /^https?:\/\//i.test(u||"")?u:"#";}
+// 画像URL復元：http始まりならフルURL、そうでなければ 接頭+中間+接尾（軽量化データ用）
+function imgUrl(it){const s=it.image;if(!s)return "";return s.startsWith("http")?s:((DATA.img_pre||"")+s+(DATA.img_suf||""));}
+function isEnding(t){return /^\d+\s*[分秒]/.test(t||"");}
+function allIn(it){const ship=it.free_shipping?0:(it.postage==null?null:it.postage);return {total:it.current_price==null?null:it.current_price+(ship||0), shipKnown:ship!=null, ship};}
+// 残り時間は end_at からブラウザで計算（JSONが古くても正確・終了済みは ended=true）
+function remaining(end_at){
+  if(!end_at) return {text:"", ended:false};
+  const end=end_at*1000; if(isNaN(end)) return {text:"",ended:false};
+  const diff=end-Date.now(); if(diff<=0) return {text:"", ended:true};
+  const mins=Math.floor(diff/60000), d=Math.floor(mins/1440), h=Math.floor((mins%1440)/60), m=mins%60;
+  if(d>0) return {text:`${d}日${h}時間`,ended:false};
+  if(h>0) return {text:`${h}時間${m}分`,ended:false};
+  return {text:`${m}分`,ended:false};
+}
+
+/* ── ヘッダー実高さに合わせてパネル(.guide/.calc)の sticky 位置を調整 ── */
+function fixStickyTop(){
+  const h=document.querySelector("header");
+  if(h) document.documentElement.style.setProperty("--htop",(h.offsetHeight+10)+"px");
+}
+window.addEventListener("resize",fixStickyTop);
+
+/* ── 相場表パネル ── */
+function renderGuide(filter){
+  const f=(filter||"").trim();
+  const box=$("#guideList"); let html="";
+  for(const cat of ["necklace","ring","bracelet","earring"]){
+    const rows=SOBA.filter(e=>e.cat===cat && (!f || e.jp.includes(f)||e.en.toLowerCase().includes(f.toLowerCase())));
+    if(!rows.length) continue;
+    html+=`<div class="gcat">${CAT_LABEL[cat]}</div>`;
+    if(cat==="ring") html+=`<div class="gcaution">※リングは号数で相場が大きく変わる。分からなければ必ず相談！</div>`;
+    for(const e of rows){
+      html+=`<div class="grow"><img loading="lazy" src="${esc(e.img)}" alt=""><div><div class="gj">${esc(e.jp)}</div><div class="gp">${esc(e.price)}</div><div class="gpt">${esc(e.point)}</div></div></div>`;
+    }
+  }
+  box.innerHTML=html||`<div class="gpt" style="padding:12px 0">該当なし</div>`;
+}
+
+/* ── フィルター送信用クエリ ── */
+// 全フィルタ＆並び替えをブラウザ内で実行（サーバー不要）
+function filterSort(items){
+  const ex=state.exclude?state.exclude.split(/[\s,、　]+/).filter(Boolean):[];
+  const mn=state.min?parseInt(state.min,10):null, mx=state.max?parseInt(state.max,10):null;
+  const sz=state.size?parseFloat(state.size):null;
+  const out=items.filter(it=>{
+    if(remaining(it.end_at).ended) return false;                 // 終了済みは出さない
+    if(state.keyword && it.keyword!==state.keyword) return false;
+    if(state.q && !(it.title||"").includes(state.q)) return false;
+    if(ex.some(w=>(it.title||"").includes(w))) return false;      // 除外ワード
+    if(state.store!=="" && String(it.is_store)!==state.store) return false;
+    if(state.buynow==="1" && it.buynow_price==null) return false;
+    if(state.buynow==="0" && it.buynow_price!=null) return false;
+    if(sz!=null && !(it.ring_size!=null && it.ring_size>=sz)) return false;
+    if(favOnly && !FAV[it.id]) return false;
+    const a=allIn(it).total;                                      // 総額（送料込）
+    if(mn!=null && (a==null||a<mn)) return false;
+    if(mx!=null && (a==null||a>mx)) return false;
+    return true;
+  });
+  const tot=it=>{const a=allIn(it).total;return a==null?Infinity:a;};
+  const endv=it=>{const e=it.end_at?it.end_at*1000:Infinity;return isNaN(e)?Infinity:e;};
+  const cmp={
+    new:(a,b)=>(b.first_seen||0)-(a.first_seen||0),
+    price_asc:(a,b)=>tot(a)-tot(b),
+    price_desc:(a,b)=>(allIn(b).total||0)-(allIn(a).total||0),
+    ending:(a,b)=>endv(a)-endv(b),
+    bids:(a,b)=>(b.bids||0)-(a.bids||0),
+  }[state.sort]||(()=>0);
+  return out.sort(cmp);
+}
+
+function chips(keywords,counts){
+  const c=$("#chips");
+  if(c.dataset.built==="1"){c.querySelectorAll(".chip[data-kw]").forEach(ch=>{const k=ch.dataset.kw;if(k)ch.querySelector(".n").textContent=counts[k]??0;});return;}
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  let h=`<div class="chip on" data-kw=""><span>すべて</span><span class="n">${total}</span></div>`;
+  for(const k of keywords)h+=`<div class="chip" data-kw="${esc(k)}"><span>${esc(shortKw(k))}</span><span class="n">${counts[k]??0}</span></div>`;
+  c.innerHTML=h;c.dataset.built="1";
+  c.querySelectorAll(".chip").forEach(ch=>ch.addEventListener("click",()=>{state.keyword=ch.dataset.kw;c.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===ch));load();}));
+}
+
+async function load(){
+  if(!DATA){
+    try{ DATA=await fetch(DATA_URL+"?t="+Date.now()).then(r=>r.json()); }
+    catch(e){ $("#stat").textContent="データ読込エラー（"+DATA_URL+"）"; return; }
+  }
+  render();
+}
+
+/* ── ページング（①）：filterSort結果を保持し、バッチごとに追記描画 ── */
+let RENDERED=[], shown=0;
+// 初期/追加表示件数：PC=48 / スマホ(≤640px)=24
+function pageSize(){return window.matchMedia("(max-width:640px)").matches?24:48;}
+
+// 1商品分のカード要素を生成（★お気に入りハンドラもこのカードに直接付与）
+function buildCard(it){
+  const now=Date.now();
+  const url="https://page.auctions.yahoo.co.jp/jp/auction/"+encodeURIComponent(it.id);
+  const ai=allIn(it);
+  const rem=remaining(it.end_at);
+  const ending=isEnding(rem.text);
+  const popular=it.bids>=10;
+  const big=it.ring_size!=null && it.ring_size>=15;
+  const isNew=it.first_seen && (now-it.first_seen*1000)<3*3600*1000;
+  const soba=matchSoba(it.title, it.ring_size!=null);
+  const range=soba?sobaRange(soba.price):null;
+
+  // 相場シグナル（お得 / 要確認＝安すぎ＝真贋注意）
+  let sig="";
+  if(range && ai.total!=null && ai.shipKnown){
+    if(ai.total < range.min*0.5) sig=`<div class="signal sig-warn" title="相場より極端に安い。状態難・付属品欠け・真贋に注意">相場より大幅安 ⚠ 状態/真贋を確認 (相場${yen(range.min)}〜)</div>`;
+    else if(ai.total < range.min) sig=`<div class="signal sig-deal">相場より安い (相場${yen(range.min)}〜${yen(range.max)})</div>`;
+    else sig=`<div class="signal sig-soba">参考相場 ${esc(soba.jp)} ${esc(soba.price)}</div>`;
+  } else if(soba){
+    sig=`<div class="signal sig-soba">参考相場 ${esc(soba.jp)} ${esc(soba.price)}</div>`;
+  }
+
+  const cls=big?"target":(popular||ending?"hot":"");
+  const aucfan=`https://aucview.aucfan.com/yahoo/${encodeURIComponent(it.id)}/`;
+  const totStr=ai.total==null?"—":`¥${yen(ai.total)}`;
+  const brk = ai.total==null?"" : (it.free_shipping?'<span class="brk">送料込</span>'
+     : ai.shipKnown?`<span class="brk">(${yen(it.current_price)}+送料${yen(it.postage)})</span>`
+     : `<span class="brk">+送料未定</span>`);
+
+  const pills=[];
+  if(it.ring_size!=null) pills.push(`<span class="pill ${big?'bigsize':'size'}">${it.ring_size}号${big?' 大':''}</span>`);
+  if(it.aftermarket) pills.push(`<span class="pill sgai">社外チェーン</span>`);
+  if(it.condition) pills.push(`<span class="pill cond">${esc(it.condition)}</span>`);
+  if(it.free_shipping) pills.push(`<span class="pill">送料無料</span>`);
+
+  const card=document.createElement("div");card.className="card "+cls;
+  card.innerHTML=`
+    <button class="fav ${FAV[it.id]?'on':''}" data-id="${esc(it.id)}" title="お気に入り">${FAV[it.id]?'★':'☆'}</button>
+    <a class="thumb" href="${esc(url)}" target="_blank" rel="noopener">
+      ${it.image?`<img loading="lazy" decoding="async" width="300" height="300" src="${esc(safeUrl(imgUrl(it)))}" alt="">`:""}
+      <div class="tags">
+        <span class="tg tg-kw">${esc(shortKw(it.keyword))}</span>
+        ${isNew?'<span class="tg tg-new">新着</span>':''}
+        ${ending?'<span class="tg tg-end">まもなく終了</span>':''}
+        <span class="tg tg-store">${it.is_store?'ストア':'個人'}</span>
+      </div>
+    </a>
+    <div class="body">
+      <div class="ttl">${esc(it.title)}</div>
+      <div class="ptot"><span class="lb">総額</span><span class="now">${totStr}</span>${brk}</div>
+      ${sig}
+      ${pills.length?`<div class="pills">${pills.join("")}</div>`:""}
+      <div class="meta">
+        <span class="m ${popular?'hot':''}">入札 ${it.bids}</span>
+        <span class="m" data-rem>残り ${esc(rem.text||"—")}</span>
+      </div>
+      <div class="acts">
+        <a class="a-view" href="${esc(url)}" target="_blank" rel="noopener">商品を見る</a>
+        <a class="a-bid" href="${aucfan}" target="_blank" rel="noopener">入札予約</a>
+      </div>
+    </div>`;
+  card._endAt=it.end_at;   // 30秒ごとの残り時間更新(tickRemaining)で参照
+  const fb=card.querySelector(".fav");
+  fb.addEventListener("click",e=>{
+    e.preventDefault();const id=fb.dataset.id;FAV[id]=!FAV[id];if(!FAV[id])delete FAV[id];saveFav();
+    fb.classList.toggle("on",!!FAV[id]);fb.textContent=FAV[id]?'★':'☆';
+    if(favOnly)load();
+  });
+  return card;
+}
+
+// 次のバッチを #grid に追記（既存カードは再生成しない）。残り0で「もっと見る」を隠す
+function appendBatch(){
+  const g=$("#grid");
+  const end=Math.min(shown+pageSize(), RENDERED.length);
+  const frag=document.createDocumentFragment();
+  for(let i=shown;i<end;i++) frag.appendChild(buildCard(RENDERED[i]));
+  g.appendChild(frag);
+  shown=end;
+  const rest=RENDERED.length-shown;
+  const mb=$("#moreBtn");
+  if(rest>0){mb.style.display="block";mb.textContent=`もっと見る（残り${rest}件）`;}
+  else mb.style.display="none";
+}
+
+// preserve=true（30秒ライブ更新時）は直前の表示件数を維持。それ以外は初期件数にリセット
+function render(preserve){
+  const d=DATA;
+  const live=d.items.filter(it=>!remaining(it.end_at).ended);   // 終了していない商品
+  const counts={};for(const it of live)counts[it.keyword]=(counts[it.keyword]||0)+1;
+  chips(d.keywords,counts);
+  const w=$("#warn");if(d.warning){w.textContent="⚠ "+d.warning;w.style.display="block";}else w.style.display="none";
+
+  const prev=shown;
+  RENDERED=filterSort(d.items);                                  // 該当商品（全件分）を保持
+  $("#stat").innerHTML=`表示 <b>${RENDERED.length}</b> / 全 <b>${live.length}</b> 件<br>更新 ${fmtTime(d.generated_at)}`;
+  const g=$("#grid");g.innerHTML="";$("#empty").style.display=RENDERED.length?"none":"block";
+  shown=0;
+  if(preserve && prev>0){                                        // ライブ更新：見えていた件数まで復元
+    do{ appendBatch(); }while(shown<Math.min(prev,RENDERED.length));
+  } else {                                                       // 通常：初期バッチのみ
+    appendBatch();
+  }
+  fixStickyTop();   // チップ描画でヘッダ高が変わるため再計算
+}
+
+// 30秒ごと：既存カードの残り時間テキストだけ更新（終了カードは除去）。
+// filterSort も全DOM再生成も走らせない＝スクロール中のカクつきを防ぐ
+function tickRemaining(){
+  document.querySelectorAll("#grid .card").forEach(card=>{
+    const r=remaining(card._endAt);
+    if(r.ended){card.remove();return;}   // 終了カードは取り除く（RENDEREDはspliceしないのでshownは触らない）
+    const el=card.querySelector("[data-rem]");
+    if(el) el.textContent="残り "+(r.text||"—");
+  });
+}
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600);}
+function deb(){clearTimeout(debounce);debounce=setTimeout(load,300);}
+
+$("#fQuery").addEventListener("input",e=>{state.q=e.target.value.trim();deb();});
+$("#fExclude").addEventListener("input",e=>{state.exclude=e.target.value.trim();deb();});
+$("#fMin").addEventListener("input",e=>{state.min=e.target.value;deb();});
+$("#fMax").addEventListener("input",e=>{state.max=e.target.value;deb();});
+$("#fSize").addEventListener("input",e=>{state.size=e.target.value;deb();});
+$$("#segBuy button").forEach(b=>b.addEventListener("click",()=>{state.buynow=b.dataset.v;$$("#segBuy button").forEach(x=>x.classList.toggle("on",x===b));load();}));
+$$("#segStore button").forEach(b=>b.addEventListener("click",()=>{state.store=b.dataset.v;$$("#segStore button").forEach(x=>x.classList.toggle("on",x===b));load();}));
+$$("#segSort button").forEach(b=>b.addEventListener("click",()=>{state.sort=b.dataset.sort;$$("#segSort button").forEach(x=>x.classList.toggle("on",x===b));load();}));
+
+$("#favBtn").addEventListener("click",()=>{favOnly=!favOnly;$("#favBtn").classList.toggle("on",favOnly);load();});
+// ① もっと見る：次のバッチを追記（render は走らせない＝既存カードを保持）
+$("#moreBtn").addEventListener("click",appendBatch);
+
+// ③ 相場表ボタン：スマホはドロワー(open)、PCは折りたたみ(collapsed)をトグル
+function isNarrow(){return window.matchMedia("(max-width:900px)").matches;}
+$("#guideBtn").addEventListener("click",()=>{
+  const g=$("#guide");
+  if(isNarrow()) g.classList.toggle("open");
+  else g.classList.toggle("collapsed");
+  fixStickyTop();
+});
+$("#gClose").addEventListener("click",()=>$("#guide").classList.remove("open"));   // ×で閉じる（スマホ）
+$("#gSearch").addEventListener("input",e=>renderGuide(e.target.value));
+
+// ② キーワードチップの開閉トグル（スマホ初期=閉 / PC初期=開）
+const chipsToggleBtn=$("#chipsToggle");
+function setChipsOpen(o){$("#chips").classList.toggle("collapsed",!o);chipsToggleBtn.classList.toggle("on",o);}
+chipsToggleBtn.addEventListener("click",()=>{setChipsOpen($("#chips").classList.contains("collapsed"));fixStickyTop();});
+setChipsOpen(!window.matchMedia("(max-width:640px)").matches);
+
+/* 絞り込みシート（スマホ）の開閉 */
+function openSheet(o){$("#detailFilters").classList.toggle("open",o);$("#sheetBackdrop").classList.toggle("open",o);}
+$("#filterBtn").addEventListener("click",()=>openSheet(true));
+$("#sheetClose").addEventListener("click",()=>openSheet(false));
+$("#sheetBackdrop").addEventListener("click",()=>openSheet(false));
+
+/* ── 利益計算（メルカリ：手数料10% ＋ 送料180円） ── */
+const MERCARI_RATE=0.10, MERCARI_SHIP=180;
+function mercariFee(sell){return Math.floor(sell*MERCARI_RATE);}        // メルカリ手数料
+function mercariProceeds(sell){return sell-mercariFee(sell)-MERCARI_SHIP;} // 手取り
+function calcProfit(){
+  const sell=parseInt($("#cSell").value,10), cost=parseInt($("#cCost").value,10);
+  const box=$("#cResult");
+  if(!(sell>0)||!(cost>=0)||isNaN(cost)){box.innerHTML='<div class="cempty">売値と仕入れを入力すると<br>利益を計算します</div>';return;}
+  const fee=mercariFee(sell), proceeds=mercariProceeds(sell), profit=proceeds-cost;
+  const rate=sell>0?Math.round(profit/sell*1000)/10:0;
+  box.innerHTML=`
+    <div class="crow minus"><span>メルカリ手数料(10%)</span><b>−¥${yen(fee)}</b></div>
+    <div class="crow minus"><span>送料</span><b>−¥${yen(MERCARI_SHIP)}</b></div>
+    <div class="crow minus"><span>仕入れ</span><b>−¥${yen(cost)}</b></div>
+    <div class="crow"><span>メルカリ手取り</span><b>¥${yen(proceeds)}</b></div>
+    <div class="cprofit ${profit<0?'loss':''}">
+      <div class="pl">${profit<0?'赤字':'利益（粗利）'}</div>
+      <div class="pv">${profit<0?'−':''}¥${yen(Math.abs(profit))}</div>
+      <div class="pr">利益率 ${rate}%</div>
+    </div>`;
+}
+function calcReverse(){
+  const sell=parseInt($("#cSell").value,10), target=parseInt($("#cTarget").value,10);
+  const out=$("#cRevOut");
+  if(!(sell>0)||!(target>=0)||isNaN(target)){out.className="crevout";out.innerHTML="売値とほしい利益を入れると、<br>仕入れの上限を表示します";return;}
+  const maxCost=mercariProceeds(sell)-target;
+  if(maxCost<0){out.className="crevout";out.innerHTML=`この売値では利益¥${yen(target)}は<br><b>確保できません</b>（手取り¥${yen(mercariProceeds(sell))}）`;return;}
+  out.className="crevout has";
+  out.innerHTML=`仕入れ（落札額）は<br><span class="bigbid">¥${yen(maxCost)}</span> まで<div style="font-size:11px;color:var(--sub);margin-top:4px">この額以下で落札すれば利益¥${yen(target)}以上</div>`;
+}
+function calcAll(){calcProfit();calcReverse();}
+["#cSell","#cCost","#cTarget"].forEach(s=>$(s)&&$(s).addEventListener("input",calcAll));
+
+renderGuide("");
+load();
+fixStickyTop();   // 初期表示時のヘッダ高で sticky 位置を確定（チップ描画後は render() で再計算）
+// 残り時間のライブ更新（30秒ごと再描画）＋ 最新データ取り込み（10分ごと再取得）
+setInterval(()=>{if(!document.hidden && DATA)tickRemaining();},30000);
+setInterval(()=>{if(!document.hidden){DATA=null;load();}},600000);
+</script>
+</body>
+</html>
